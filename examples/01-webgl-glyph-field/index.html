@@ -3,51 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>#01 WebGL 微字形流场与弥散光场背景 — UI Curio Vault</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" />
+  <title>WebGL 微字形流场与环境弥散光场</title>
   <style>
-    @font-face {
-      font-family: "Geist Pixel";
-      src: url("https://cdn.jsdelivr.net/npm/geist@1.8.2/dist/fonts/geist-pixel/GeistPixel-Square.woff2") format("woff2");
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
-    }
-
     :root {
-      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-      --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
       --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-      --font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
       --bg-page: #f8f8f8;
-      --bg-surface: rgba(255, 255, 255, 0.84);
-      --bg-subtle: rgba(242, 242, 240, 0.9);
       --text-primary: #0d0d0d;
       --text-secondary: #6c6c6c;
-      --text-muted: #8f8f8f;
-      --border-subtle: rgba(0, 0, 0, 0.07);
-      --border-default: rgba(0, 0, 0, 0.1);
-      --shadow-card: 0 22px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 14px -2px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.05);
-      --btn-dark-bg: #17181c;
-      --btn-dark-text: #ffffff;
     }
 
     [data-theme="dark"] {
       --bg-page: #121212;
-      --bg-surface: rgba(24, 24, 26, 0.82);
-      --bg-subtle: rgba(38, 38, 42, 0.88);
       --text-primary: #ffffff;
-      --text-secondary: rgba(202, 202, 202, 0.72);
-      --text-muted: #767676;
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-default: rgba(255, 255, 255, 0.14);
-      --shadow-card: 0 24px 52px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.09);
-      --btn-dark-bg: #f4f4f5;
-      --btn-dark-text: #09090b;
+      --text-secondary: rgba(202, 202, 202, 0.7);
     }
 
     * {
@@ -56,23 +24,15 @@
       padding: 0;
     }
 
-    html {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
     body {
-      font-family: var(--font-sans);
-      font-size: 13px;
-      line-height: 18px;
+      font-family: "Inter", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-page);
       color: var(--text-primary);
-      overflow: hidden;
-      user-select: none;
+      overflow-x: hidden;
       transition: background-color 240ms var(--ease-standard), color 240ms var(--ease-standard);
     }
 
-    /* 一体化顶部羽化模糊遮罩 */
+    /* 1. 顶部羽化模糊遮罩（让顶栏与下方背景及滚动内容无缝融为一体，无硬切边） */
     body::before {
       content: "";
       position: fixed;
@@ -106,20 +66,19 @@
         rgba(0, 0, 0, 0.28) 84%,
         transparent 100%
       );
+      transition: background 240ms var(--ease-standard);
     }
 
-    /* WebGL 微字形流场画布 + 环境弥散光场 */
+    /* 2. WebGL 微字形流场画布容器 + 环境弥散光场 */
     .treg-field-stage {
       position: relative;
       isolation: isolate;
       overflow: hidden;
-      width: 100vw;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      cursor: crosshair;
     }
 
     .treg-field-stage::before {
@@ -151,12 +110,10 @@
         transparent 100%
       );
       animation: gatewayAura 16s ease-in-out infinite alternate;
-      transition: opacity 320ms var(--ease-standard);
     }
 
-    .treg-field-stage.is-aura-off::before,
     [data-theme="dark"] .treg-field-stage::before {
-      opacity: 0;
+      display: none;
     }
 
     @keyframes gatewayAura {
@@ -189,252 +146,12 @@
         transparent 100%
       );
     }
-
-    /* 顶栏与浮层 UI */
-    .hud-layer {
-      transition: opacity 280ms var(--ease-spring), transform 280ms var(--ease-spring), filter 240ms var(--ease-standard);
-    }
-
-    body.is-pure-canvas .hud-layer {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(8px) scale(0.98);
-      filter: blur(4px);
-    }
-
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      padding: 0 32px;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      height: 34px;
-      padding: 0 14px;
-      border-radius: 999px;
-      background: var(--bg-surface);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 12.5px;
-      transition: transform 150ms var(--ease-snappy), border-color 150ms var(--ease-standard);
-    }
-
-    .back-link:hover {
-      border-color: var(--border-default);
-      transform: translateY(-1px);
-    }
-
-    .back-link:active {
-      transform: scale(0.96);
-    }
-
-    .top-right-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* 中央前景静默区演示卡片 */
-    .specimen-center {
-      text-align: center;
-      max-width: 660px;
-      padding: 28px 36px;
-      border-radius: 24px;
-      transition: opacity 260ms var(--ease-spring), transform 260ms var(--ease-spring), filter 240ms var(--ease-standard);
-    }
-
-    .specimen-center.is-hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(0.95);
-      filter: blur(6px);
-    }
-
-    .specimen-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 11px;
-      border-radius: 999px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    }
-
-    .specimen-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-    }
-
-    .specimen-title {
-      font-family: "Geist Pixel", var(--font-mono);
-      font-size: clamp(28px, 3.5vw, 42px);
-      font-weight: 400;
-      line-height: 1.15;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-    }
-
-    .specimen-desc {
-      font-size: 14.5px;
-      line-height: 1.6;
-      color: var(--text-secondary);
-      max-width: 520px;
-      margin: 0 auto;
-    }
-
-    /* 底部交互控制坞 */
-    .control-dock {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px;
-      border-radius: 999px;
-      background: var(--bg-surface);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: var(--shadow-card);
-    }
-
-    .dock-btn {
-      height: 34px;
-      padding: 0 14px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--text-secondary);
-      font-family: var(--font-sans);
-      font-size: 12.5px;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-      transition: background-color 160ms var(--ease-standard), color 160ms var(--ease-standard), transform 140ms var(--ease-snappy);
-    }
-
-    .dock-btn:hover {
-      background: var(--bg-subtle);
-      color: var(--text-primary);
-    }
-
-    .dock-btn:active {
-      transform: scale(0.95);
-    }
-
-    .dock-btn.is-active {
-      background: var(--btn-dark-bg);
-      color: var(--btn-dark-text);
-    }
-
-    .dock-divider {
-      width: 1px;
-      height: 18px;
-      background: var(--border-default);
-      margin: 0 2px;
-    }
-
-    .pure-hint-pill {
-      position: fixed;
-      bottom: 20px;
-      right: 24px;
-      z-index: 120;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--bg-surface);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      font-size: 12px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 220ms var(--ease-standard);
-      cursor: pointer;
-    }
-
-    body.is-pure-canvas .pure-hint-pill {
-      opacity: 0.78;
-      pointer-events: auto;
-    }
   </style>
 </head>
 <body>
 
-  <!-- 顶栏 -->
-  <header class="topbar hud-layer">
-    <a href="../../index.html" class="back-link">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-      <span>返回收藏馆</span>
-    </a>
-    <div class="top-right-actions">
-      <a href="./minimal.html" target="_blank" class="back-link" title="打开无 UI 的纯净背景模板">
-        <span>纯净底座 (minimal.html)</span>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-      </a>
-    </div>
-  </header>
-
-  <!-- 核心背景容器 -->
-  <div class="treg-field-stage" id="tregFieldStage">
-    <div class="specimen-center hud-layer" id="specimenCenter" data-quiet-zone>
-      <div class="specimen-badge">
-        <span class="specimen-dot"></span>
-        <span>CURIO #01 · WEBGL SHADER + AMBIENT AURA</span>
-      </div>
-      <h1 class="specimen-title">Travelling Glyph Field</h1>
-      <p class="specimen-desc">
-        移动光标触发翡翠绿热力轨迹，点击画布任意位置释放径向冲击波，文字区域自动通知着色器生成静默避让带。
-      </p>
-    </div>
-  </div>
-
-  <!-- 底部交互控制坞 -->
-  <div class="control-dock hud-layer" role="toolbar" aria-label="背景参数控制">
-    <button type="button" class="dock-btn" id="pulseTriggerBtn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>
-      <span>释放波纹</span>
-    </button>
-    <button type="button" class="dock-btn is-active" id="toggleAuraBtn">
-      <span>弥散光场</span>
-    </button>
-    <button type="button" class="dock-btn is-active" id="toggleTitleBtn">
-      <span>前景文字避让</span>
-    </button>
-    <div class="dock-divider"></div>
-    <button type="button" class="dock-btn" id="toggleThemeBtn">
-      <span id="themeBtnLabel">深色模式</span>
-    </button>
-    <button type="button" class="dock-btn" id="pureCanvasBtn" title="快捷键: H">
-      <span>纯净全屏 (H)</span>
-    </button>
-  </div>
-
-  <button type="button" class="pure-hint-pill" id="exitPureBtn">按 H 或点击此处恢复控件</button>
+  <!-- 纯背景容器 -->
+  <div class="treg-field-stage" id="tregFieldStage"></div>
 
   <script>
     (function initTregGlyphField() {
@@ -497,7 +214,7 @@
           }
 
           float edge = smoothstep(20.0, 140.0, p.y) * (1.0 - smoothstep(uSize.y - 160.0, uSize.y, p.y));
-          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - 180.0) / 130.0, 2.0));
+          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - uSize.y * 0.5) / 130.0, 2.0));
           vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * quiet * reveal + ripple * 0.08) * edge * step(0.10, aPoint.z);
           vHeat = max(heat, min(1.0, ripple * 0.14)) * edge * step(0.10, aPoint.z);
           vKind = mod(floor(aPoint.z * 31.0), 3.0);
@@ -595,15 +312,14 @@
       const textAreas = new Float32Array(32);
       let textDirty = true;
       let openingStart = performance.now();
-      let openingX = 0.5, openingY = 0.45;
+      let openingX = 0.5, openingY = 0.5;
       let lastTime = 0, simTime = 0;
 
       function measureTextAreas() {
         textAreas.fill(0);
         textDirty = false;
-        if (document.body.classList.contains('is-pure-canvas')) return;
         const origin = host.getBoundingClientRect();
-        const nodes = Array.from(host.querySelectorAll('[data-quiet-zone]:not(.is-hidden)')).slice(0, 8);
+        const nodes = Array.from(host.querySelectorAll('[data-quiet-zone]')).slice(0, 8);
         nodes.forEach((node, i) => {
           const r = node.getBoundingClientRect();
           if (!r.width || !r.height) return;
@@ -715,7 +431,7 @@
         pulseFromEvent(e) {
           const r = host.getBoundingClientRect();
           openingX = e && e.clientX ? (e.clientX - r.left) / width : 0.5;
-          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.45;
+          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.5;
           openingStart = performance.now();
         },
         invalidateText() {
@@ -723,45 +439,6 @@
         }
       };
     })();
-
-    // 交互控制绑定
-    const hostStage = document.getElementById('tregFieldStage');
-    const specimenCenter = document.getElementById('specimenCenter');
-
-    document.getElementById('pulseTriggerBtn').addEventListener('click', () => {
-      if (window.tregParticles) window.tregParticles.pulseFromEvent();
-    });
-
-    document.getElementById('toggleAuraBtn').addEventListener('click', (e) => {
-      const btn = e.currentTarget;
-      const isOff = hostStage.classList.toggle('is-aura-off');
-      btn.classList.toggle('is-active', !isOff);
-    });
-
-    document.getElementById('toggleTitleBtn').addEventListener('click', (e) => {
-      const btn = e.currentTarget;
-      const isHidden = specimenCenter.classList.toggle('is-hidden');
-      btn.classList.toggle('is-active', !isHidden);
-      if (window.tregParticles) window.tregParticles.invalidateText();
-    });
-
-    document.getElementById('toggleThemeBtn').addEventListener('click', () => {
-      const html = document.documentElement;
-      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      document.getElementById('themeBtnLabel').textContent = next === 'dark' ? '浅色模式' : '深色模式';
-    });
-
-    function togglePureCanvas() {
-      document.body.classList.toggle('is-pure-canvas');
-      if (window.tregParticles) window.tregParticles.invalidateText();
-    }
-
-    document.getElementById('pureCanvasBtn').addEventListener('click', togglePureCanvas);
-    document.getElementById('exitPureBtn').addEventListener('click', togglePureCanvas);
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'h' || e.key === 'H') togglePureCanvas();
-    });
   </script>
 </body>
 </html>
