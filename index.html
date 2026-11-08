@@ -327,34 +327,6 @@
       text-align: center;
     }
 
-    .hero-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-      cursor: pointer;
-      transition: transform 160ms var(--ease-snappy);
-    }
-
-    .hero-pill:active {
-      transform: scale(0.95);
-    }
-
-    .hero-pill-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-    }
-
     .hero-title {
       font-family: "Geist Pixel", var(--font-mono);
       font-size: clamp(32px, 3.8vw, 46px);
@@ -407,10 +379,6 @@
   <!-- 顶部流场背景舞台 -->
   <div class="treg-field-stage" id="tregFieldStage">
     <section class="hero-section">
-      <div class="hero-pill" id="heroPulseBtn" data-quiet-zone title="点击释放背景粒子波纹">
-        <span class="hero-pill-dot"></span>
-        <span>CURATED WEB SPECIMENS · 点击触发粒子波纹</span>
-      </div>
       <h1 class="hero-title" id="heroTitle" data-quiet-zone>UI Curio Vault</h1>
       <p class="hero-subtitle" data-quiet-zone>
         专门收藏好玩、美观且零依赖的 HTML / WebGL / CSS 视觉背景与微交互奇物。每一个例子均可独立运行或一键移植。
