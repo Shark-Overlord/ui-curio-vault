@@ -126,6 +126,10 @@
       min-height: 100vh;
       margin-top: -58px;
       padding-top: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .treg-field-stage::before {
@@ -319,7 +323,7 @@
     .hero-section {
       max-width: 960px;
       margin: 0 auto;
-      padding: 64px 24px 44px;
+      padding: 0 24px 58px;
       text-align: center;
     }
 
@@ -476,7 +480,7 @@
           }
 
           float edge = smoothstep(20.0, 140.0, p.y) * (1.0 - smoothstep(uSize.y - 160.0, uSize.y, p.y));
-          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - 180.0) / 130.0, 2.0));
+          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - uSize.y * 0.5) / 130.0, 2.0));
           vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * quiet * reveal + ripple * 0.08) * edge * step(0.10, aPoint.z);
           vHeat = max(heat, min(1.0, ripple * 0.14)) * edge * step(0.10, aPoint.z);
           vKind = mod(floor(aPoint.z * 31.0), 3.0);
@@ -574,7 +578,7 @@
       const textAreas = new Float32Array(32);
       let textDirty = true;
       let openingStart = performance.now();
-      let openingX = 0.5, openingY = 0.22;
+      let openingX = 0.5, openingY = 0.5;
       let lastTime = 0, simTime = 0;
 
       function measureTextAreas() {
@@ -689,7 +693,7 @@
         pulseFromEvent(e) {
           const r = host.getBoundingClientRect();
           openingX = e && e.clientX ? (e.clientX - r.left) / width : 0.5;
-          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.22;
+          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.5;
           openingStart = performance.now();
         },
         invalidateText() {
