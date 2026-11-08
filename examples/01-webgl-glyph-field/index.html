@@ -92,194 +92,79 @@
       contain: strict;
     }
 
-    /* ================= 悬浮色彩控制面板（居中） ================= */
-    .palette-widget {
+    /* ================= 底部居中紧凑色条 ================= */
+    .color-bar {
       position: fixed;
-      top: 50%;
+      bottom: 28px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       z-index: 100;
-      width: 288px;
-      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
       background: var(--panel-bg);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       box-shadow: var(--panel-shadow);
-      padding: 16px;
-      transition:
-        transform 340ms var(--ease-spring),
-        opacity 240ms var(--ease-standard),
-        background-color 280ms var(--ease-standard),
-        box-shadow 280ms var(--ease-standard);
+      transition: background-color 280ms var(--ease-standard), box-shadow 280ms var(--ease-standard);
     }
 
-    .palette-widget.is-collapsed {
-      width: auto;
-      padding: 8px 12px;
-      border-radius: 999px;
-    }
-
-    .palette-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 13px;
-    }
-
-    .palette-widget.is-collapsed .palette-header {
-      margin-bottom: 0;
-    }
-
-    .palette-title-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .palette-live-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #059659;
-      box-shadow: 0 0 0 2px rgba(5, 150, 89, 0.22);
-      flex-shrink: 0;
-      transition: background-color 240ms var(--ease-standard), box-shadow 240ms var(--ease-standard);
-    }
-
-    .palette-title {
-      font-size: 12.5px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      color: var(--panel-text);
-    }
-
-    .palette-toggle-btn {
-      height: 24px;
-      padding: 0 8px;
-      border-radius: 999px;
-      border: none;
-      background: var(--panel-subtle);
-      color: var(--panel-muted);
-      font-family: inherit;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background-color 150ms var(--ease-standard), color 150ms var(--ease-standard), transform 140ms var(--ease-snappy);
-    }
-
-    .palette-toggle-btn:hover {
-      color: var(--panel-text);
-    }
-
-    .palette-toggle-btn:active {
-      transform: scale(0.94);
-    }
-
-    .palette-body {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .palette-widget.is-collapsed .palette-body {
-      display: none;
-    }
-
-    /* 预设色卡网格 */
-    .preset-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
-    }
-
-    .preset-btn {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      height: 32px;
-      padding: 0 9px;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      background: var(--panel-subtle);
-      color: var(--panel-text);
-      font-family: inherit;
-      font-size: 11.5px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: transform 150ms var(--ease-snappy), border-color 160ms var(--ease-standard), background-color 160ms var(--ease-standard);
-    }
-
-    .preset-btn:hover {
-      border-color: var(--panel-border);
-    }
-
-    .preset-btn:active {
-      transform: scale(0.95);
-    }
-
-    .preset-btn.is-active {
-      border-color: currentColor;
-      background: color-mix(in srgb, var(--panel-subtle) 40%, transparent);
-    }
-
-    .preset-swatch {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
-    }
-
-    /* 自定义拾色器行 */
-    .custom-pickers {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid var(--panel-border);
-    }
-
-    .picker-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 6px 9px;
-      border-radius: 10px;
-      background: var(--panel-subtle);
-      cursor: pointer;
-      transition: transform 140ms var(--ease-snappy);
-    }
-
-    .picker-item:active {
-      transform: scale(0.97);
-    }
-
-    .picker-label {
-      font-size: 11.5px;
-      font-weight: 500;
-      color: var(--panel-muted);
-    }
-
-    .picker-input-wrap {
+    .swatch-btn {
       position: relative;
-      width: 20px;
-      height: 20px;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-      flex-shrink: 0;
-    }
-
-    .picker-input {
-      position: absolute;
-      inset: -6px;
-      width: 32px;
-      height: 32px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
       border: none;
       padding: 0;
-      background: none;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+      transition: transform 180ms var(--ease-spring), box-shadow 180ms var(--ease-standard);
+    }
+
+    .swatch-btn:hover {
+      transform: scale(1.14);
+    }
+
+    .swatch-btn:active {
+      transform: scale(0.92);
+    }
+
+    .swatch-btn.is-active {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 4px var(--panel-text);
+    }
+
+    .bar-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--panel-border);
+      margin: 0 2px;
+    }
+
+    .custom-color-wrap {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      overflow: hidden;
+      cursor: pointer;
+      background: conic-gradient(#ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+      transition: transform 180ms var(--ease-spring);
+    }
+
+    .custom-color-wrap:hover {
+      transform: scale(1.14);
+    }
+
+    .custom-color-input {
+      position: absolute;
+      inset: -6px;
+      width: 36px;
+      height: 36px;
+      opacity: 0;
       cursor: pointer;
     }
   </style>
@@ -289,72 +174,19 @@
   <!-- 100% 全屏纯背景容器 -->
   <div class="treg-field-stage" id="tregFieldStage"></div>
 
-  <!-- 右下角悬浮色彩面板 -->
-  <aside class="palette-widget" id="paletteWidget" aria-label="色彩面板">
-    <div class="palette-header">
-      <div class="palette-title-group">
-        <span class="palette-live-dot" id="paletteLiveDot"></span>
-        <span class="palette-title">色彩面板</span>
-      </div>
-      <button type="button" class="palette-toggle-btn" id="collapseBtn" title="收起/展开面板 (快捷键 H)">收起</button>
-    </div>
-
-    <div class="palette-body">
-      <div class="preset-grid" id="presetGrid">
-        <button type="button" class="preset-btn is-active" data-preset="emerald">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #8bbbac, #059659)"></span>
-          <span>翡翠绿</span>
-        </button>
-        <button type="button" class="preset-btn" data-preset="ocean">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #7dd3fc, #0284c7)"></span>
-          <span>冰川蓝</span>
-        </button>
-        <button type="button" class="preset-btn" data-preset="violet">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #c4b5fd, #7c3aed)"></span>
-          <span>极光紫</span>
-        </button>
-        <button type="button" class="preset-btn" data-preset="amber">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #fde68a, #ea580c)"></span>
-          <span>落日金</span>
-        </button>
-        <button type="button" class="preset-btn" data-preset="sakura">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #fbcfe8, #e11d48)"></span>
-          <span>雾樱粉</span>
-        </button>
-        <button type="button" class="preset-btn" data-preset="obsidian">
-          <span class="preset-swatch" style="background: linear-gradient(135deg, #27272a, #e4e4e7)"></span>
-          <span>黑曜石</span>
-        </button>
-      </div>
-
-      <div class="custom-pickers">
-        <label class="picker-item" title="自定义背景底色">
-          <span class="picker-label">背景底色</span>
-          <span class="picker-input-wrap">
-            <input type="color" class="picker-input" id="pickBg" value="#f8f8f8" />
-          </span>
-        </label>
-        <label class="picker-item" title="自定义环境弥散光晕主色">
-          <span class="picker-label">弥散光晕</span>
-          <span class="picker-input-wrap">
-            <input type="color" class="picker-input" id="pickAura" value="#7fb8a4" />
-          </span>
-        </label>
-        <label class="picker-item" title="自定义微字形静默态颜色">
-          <span class="picker-label">字形粒子</span>
-          <span class="picker-input-wrap">
-            <input type="color" class="picker-input" id="pickBase" value="#306657" />
-          </span>
-        </label>
-        <label class="picker-item" title="自定义光标轨迹与波纹高亮色">
-          <span class="picker-label">轨迹高亮</span>
-          <span class="picker-input-wrap">
-            <input type="color" class="picker-input" id="pickHeat" value="#059659" />
-          </span>
-        </label>
-      </div>
-    </div>
-  </aside>
+  <!-- 底部居中色条 -->
+  <div class="color-bar" id="colorBar" role="toolbar" aria-label="切换背景配色">
+    <button type="button" class="swatch-btn is-active" data-preset="emerald" title="翡翠绿" style="background: linear-gradient(135deg, #8bbbac, #059659)"></button>
+    <button type="button" class="swatch-btn" data-preset="ocean" title="冰川蓝" style="background: linear-gradient(135deg, #7dd3fc, #0284c7)"></button>
+    <button type="button" class="swatch-btn" data-preset="violet" title="极光紫" style="background: linear-gradient(135deg, #c4b5fd, #7c3aed)"></button>
+    <button type="button" class="swatch-btn" data-preset="amber" title="落日金" style="background: linear-gradient(135deg, #fde68a, #ea580c)"></button>
+    <button type="button" class="swatch-btn" data-preset="sakura" title="雾樱粉" style="background: linear-gradient(135deg, #fbcfe8, #e11d48)"></button>
+    <button type="button" class="swatch-btn" data-preset="obsidian" title="黑曜石" style="background: linear-gradient(135deg, #27272a, #e4e4e7)"></button>
+    <span class="bar-divider"></span>
+    <label class="custom-color-wrap" title="自定义主色调">
+      <input type="color" class="custom-color-input" id="customHueInput" value="#059659" />
+    </label>
+  </div>
 
   <script>
     // HEX <-> RGB [0..1] 辅助函数
@@ -744,57 +576,26 @@
       };
     })();
 
-    // ================= 色彩面板交互控制 =================
+    // ================= 底部色条交互控制 =================
     const rootStyle = document.documentElement.style;
-    const paletteWidget = document.getElementById('paletteWidget');
-    const collapseBtn = document.getElementById('collapseBtn');
-    const paletteLiveDot = document.getElementById('paletteLiveDot');
-    const presetGrid = document.getElementById('presetGrid');
-    const pickBg = document.getElementById('pickBg');
-    const pickAura = document.getElementById('pickAura');
-    const pickBase = document.getElementById('pickBase');
-    const pickHeat = document.getElementById('pickHeat');
-
-    function updateLiveDot(heatHex) {
-      paletteLiveDot.style.backgroundColor = heatHex;
-      paletteLiveDot.style.boxShadow = `0 0 0 3px ${hexToRgbaCss(heatHex, 0.22)}`;
-    }
-
-    function applyBgColor(bgHex) {
-      rootStyle.setProperty('--bg-page', bgHex);
-      document.documentElement.setAttribute('data-ui-dark', isDarkHex(bgHex) ? 'true' : 'false');
-    }
-
-    function applyAuraColor(auraHex, customAuras = null) {
-      if (customAuras) {
-        rootStyle.setProperty('--aura-1', customAuras[0]);
-        rootStyle.setProperty('--aura-2', customAuras[1]);
-        rootStyle.setProperty('--aura-3', customAuras[2]);
-        rootStyle.setProperty('--aura-4', customAuras[3]);
-      } else {
-        rootStyle.setProperty('--aura-1', hexToRgbaCss(auraHex, 0.52));
-        rootStyle.setProperty('--aura-2', hexToRgbaCss(auraHex, 0.36));
-        rootStyle.setProperty('--aura-3', hexToRgbaCss(auraHex, 0.38));
-        rootStyle.setProperty('--aura-4', hexToRgbaCss(auraHex, 0.25));
-      }
-    }
+    const colorBar = document.getElementById('colorBar');
+    const customHueInput = document.getElementById('customHueInput');
 
     function applyPreset(name, triggerEvent = null) {
       const p = COLOR_PRESETS[name];
       if (!p) return;
 
-      pickBg.value = p.bg;
-      pickAura.value = p.aura;
-      pickBase.value = p.base;
-      pickHeat.value = p.heat;
+      rootStyle.setProperty('--bg-page', p.bg);
+      document.documentElement.setAttribute('data-ui-dark', isDarkHex(p.bg) ? 'true' : 'false');
+      rootStyle.setProperty('--aura-1', p.auras[0]);
+      rootStyle.setProperty('--aura-2', p.auras[1]);
+      rootStyle.setProperty('--aura-3', p.auras[2]);
+      rootStyle.setProperty('--aura-4', p.auras[3]);
 
-      applyBgColor(p.bg);
-      applyAuraColor(p.aura, p.auras);
       targetBaseRgb = hexToRgb01(p.base);
       targetHeatRgb = hexToRgb01(p.heat);
-      updateLiveDot(p.heat);
 
-      presetGrid.querySelectorAll('.preset-btn').forEach((btn) => {
+      colorBar.querySelectorAll('.swatch-btn').forEach((btn) => {
         btn.classList.toggle('is-active', btn.dataset.preset === name);
       });
 
@@ -803,45 +604,22 @@
       }
     }
 
-    presetGrid.addEventListener('click', (e) => {
-      const btn = e.target.closest('.preset-btn');
+    colorBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.swatch-btn');
       if (!btn) return;
       applyPreset(btn.dataset.preset, e);
     });
 
-    function clearActivePreset() {
-      presetGrid.querySelectorAll('.preset-btn').forEach((btn) => btn.classList.remove('is-active'));
-    }
-
-    pickBg.addEventListener('input', (e) => {
-      clearActivePreset();
-      applyBgColor(e.target.value);
-    });
-
-    pickAura.addEventListener('input', (e) => {
-      clearActivePreset();
-      applyAuraColor(e.target.value);
-    });
-
-    pickBase.addEventListener('input', (e) => {
-      clearActivePreset();
-      targetBaseRgb = hexToRgb01(e.target.value);
-    });
-
-    pickHeat.addEventListener('input', (e) => {
-      clearActivePreset();
-      targetHeatRgb = hexToRgb01(e.target.value);
-      updateLiveDot(e.target.value);
-    });
-
-    function toggleCollapse() {
-      const isCollapsed = paletteWidget.classList.toggle('is-collapsed');
-      collapseBtn.textContent = isCollapsed ? '展开' : '收起';
-    }
-
-    collapseBtn.addEventListener('click', toggleCollapse);
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'h' || e.key === 'H') toggleCollapse();
+    customHueInput.addEventListener('input', (e) => {
+      const hex = e.target.value;
+      colorBar.querySelectorAll('.swatch-btn').forEach((btn) => btn.classList.remove('is-active'));
+      rootStyle.setProperty('--aura-1', hexToRgbaCss(hex, 0.42));
+      rootStyle.setProperty('--aura-2', hexToRgbaCss(hex, 0.30));
+      rootStyle.setProperty('--aura-3', hexToRgbaCss(hex, 0.32));
+      rootStyle.setProperty('--aura-4', hexToRgbaCss(hex, 0.22));
+      const rgb = hexToRgb01(hex);
+      targetHeatRgb = rgb;
+      targetBaseRgb = rgb.map((v) => v * 0.62);
     });
   </script>
 </body>
