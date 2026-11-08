@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>#01 WebGL 微字形流场与弥散光场背景 — UI Curio Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" />
+  <style>
+    @font-face {
+      font-family: "Geist Pixel";
+      src: url("https://cdn.jsdelivr.net/npm/geist@1.8.2/dist/fonts/geist-pixel/GeistPixel-Square.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+      --font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+      --bg-page: #f8f8f8;
+      --bg-surface: rgba(255, 255, 255, 0.84);
+      --bg-subtle: rgba(242, 242, 240, 0.9);
+      --text-primary: #0d0d0d;
+      --text-secondary: #6c6c6c;
+      --text-muted: #8f8f8f;
+      --border-subtle: rgba(0, 0, 0, 0.07);
+      --border-default: rgba(0, 0, 0, 0.1);
+      --shadow-card: 0 22px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 14px -2px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      --btn-dark-bg: #17181c;
+      --btn-dark-text: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg-page: #121212;
+      --bg-surface: rgba(24, 24, 26, 0.82);
+      --bg-subtle: rgba(38, 38, 42, 0.88);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(202, 202, 202, 0.72);
+      --text-muted: #767676;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-default: rgba(255, 255, 255, 0.14);
+      --shadow-card: 0 24px 52px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.09);
+      --btn-dark-bg: #f4f4f5;
+      --btn-dark-text: #09090b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 18px;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      overflow: hidden;
+      user-select: none;
+      transition: background-color 240ms var(--ease-standard), color 240ms var(--ease-standard);
+    }
+
+    /* 一体化顶部羽化模糊遮罩 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 142px;
+      z-index: 90;
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        var(--bg-page) 0%,
+        color-mix(in srgb, var(--bg-page) 96%, transparent) 26%,
+        color-mix(in srgb, var(--bg-page) 82%, transparent) 50%,
+        color-mix(in srgb, var(--bg-page) 42%, transparent) 76%,
+        transparent 100%
+      );
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 38%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.28) 84%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 38%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.28) 84%,
+        transparent 100%
+      );
+    }
+
+    /* WebGL 微字形流场画布 + 环境弥散光场 */
+    .treg-field-stage {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: crosshair;
+    }
+
+    .treg-field-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 22%, rgba(220, 232, 223, 0.62), transparent 58%),
+        radial-gradient(ellipse at 39% 62%, rgba(139, 187, 172, 0.34), transparent 52%),
+        radial-gradient(ellipse at 63% 56%, rgba(184, 201, 196, 0.36), transparent 56%),
+        radial-gradient(ellipse at 54% 74%, rgba(79, 140, 121, 0.24), transparent 50%);
+      filter: blur(36px);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.32) 64px,
+        #000 156px,
+        #000 calc(100% - 160px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.32) 64px,
+        #000 156px,
+        #000 calc(100% - 160px),
+        transparent 100%
+      );
+      animation: gatewayAura 16s ease-in-out infinite alternate;
+      transition: opacity 320ms var(--ease-standard);
+    }
+
+    .treg-field-stage.is-aura-off::before,
+    [data-theme="dark"] .treg-field-stage::before {
+      opacity: 0;
+    }
+
+    @keyframes gatewayAura {
+      from { transform: translate3d(-14px, 8px, 0) scale(0.98); }
+      to   { transform: translate3d(14px, -8px, 0) scale(1.03); }
+    }
+
+    .hero-particles {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      contain: strict;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.28) 64px,
+        #000 152px,
+        #000 calc(100% - 150px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.28) 64px,
+        #000 152px,
+        #000 calc(100% - 150px),
+        transparent 100%
+      );
+    }
+
+    /* 顶栏与浮层 UI */
+    .hud-layer {
+      transition: opacity 280ms var(--ease-spring), transform 280ms var(--ease-spring), filter 240ms var(--ease-standard);
+    }
+
+    body.is-pure-canvas .hud-layer {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px) scale(0.98);
+      filter: blur(4px);
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      padding: 0 32px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 12.5px;
+      transition: transform 150ms var(--ease-snappy), border-color 150ms var(--ease-standard);
+    }
+
+    .back-link:hover {
+      border-color: var(--border-default);
+      transform: translateY(-1px);
+    }
+
+    .back-link:active {
+      transform: scale(0.96);
+    }
+
+    .top-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 中央前景静默区演示卡片 */
+    .specimen-center {
+      text-align: center;
+      max-width: 660px;
+      padding: 28px 36px;
+      border-radius: 24px;
+      transition: opacity 260ms var(--ease-spring), transform 260ms var(--ease-spring), filter 240ms var(--ease-standard);
+    }
+
+    .specimen-center.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+      filter: blur(6px);
+    }
+
+    .specimen-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .specimen-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .specimen-title {
+      font-family: "Geist Pixel", var(--font-mono);
+      font-size: clamp(28px, 3.5vw, 42px);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .specimen-desc {
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* 底部交互控制坞 */
+    .control-dock {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-card);
+    }
+
+    .dock-btn {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background-color 160ms var(--ease-standard), color 160ms var(--ease-standard), transform 140ms var(--ease-snappy);
+    }
+
+    .dock-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .dock-btn:active {
+      transform: scale(0.95);
+    }
+
+    .dock-btn.is-active {
+      background: var(--btn-dark-bg);
+      color: var(--btn-dark-text);
+    }
+
+    .dock-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border-default);
+      margin: 0 2px;
+    }
+
+    .pure-hint-pill {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      z-index: 120;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms var(--ease-standard);
+      cursor: pointer;
+    }
+
+    body.is-pure-canvas .pure-hint-pill {
+      opacity: 0.78;
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶栏 -->
+  <header class="topbar hud-layer">
+    <a href="../../index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      <span>返回收藏馆</span>
+    </a>
+    <div class="top-right-actions">
+      <a href="./minimal.html" target="_blank" class="back-link" title="打开无 UI 的纯净背景模板">
+        <span>纯净底座 (minimal.html)</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- 核心背景容器 -->
+  <div class="treg-field-stage" id="tregFieldStage">
+    <div class="specimen-center hud-layer" id="specimenCenter" data-quiet-zone>
+      <div class="specimen-badge">
+        <span class="specimen-dot"></span>
+        <span>CURIO #01 · WEBGL SHADER + AMBIENT AURA</span>
+      </div>
+      <h1 class="specimen-title">Travelling Glyph Field</h1>
+      <p class="specimen-desc">
+        移动光标触发翡翠绿热力轨迹，点击画布任意位置释放径向冲击波，文字区域自动通知着色器生成静默避让带。
+      </p>
+    </div>
+  </div>
+
+  <!-- 底部交互控制坞 -->
+  <div class="control-dock hud-layer" role="toolbar" aria-label="背景参数控制">
+    <button type="button" class="dock-btn" id="pulseTriggerBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></svg>
+      <span>释放波纹</span>
+    </button>
+    <button type="button" class="dock-btn is-active" id="toggleAuraBtn">
+      <span>弥散光场</span>
+    </button>
+    <button type="button" class="dock-btn is-active" id="toggleTitleBtn">
+      <span>前景文字避让</span>
+    </button>
+    <div class="dock-divider"></div>
+    <button type="button" class="dock-btn" id="toggleThemeBtn">
+      <span id="themeBtnLabel">深色模式</span>
+    </button>
+    <button type="button" class="dock-btn" id="pureCanvasBtn" title="快捷键: H">
+      <span>纯净全屏 (H)</span>
+    </button>
+  </div>
+
+  <button type="button" class="pure-hint-pill" id="exitPureBtn">按 H 或点击此处恢复控件</button>
+
+  <script>
+    (function initTregGlyphField() {
+      const host = document.getElementById('tregFieldStage');
+      if (!host) return;
+      const canvas = document.createElement('canvas');
+      canvas.className = 'hero-particles';
+      canvas.setAttribute('aria-hidden', 'true');
+      host.prepend(canvas);
+
+      const gl = canvas.getContext('webgl', {
+        alpha: true,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        premultipliedAlpha: true,
+        powerPreference: 'low-power'
+      });
+      if (!gl) {
+        canvas.remove();
+        return;
+      }
+
+      const vertex = `
+        precision highp float;
+        attribute vec3 aPoint;
+        uniform vec2 uSize, uDrift;
+        uniform float uTime, uDpr, uCell;
+        uniform vec3 uOpening;
+        uniform vec3 uTrail[24];
+        uniform vec4 uTextAreas[8];
+        varying float vAlpha, vKind, vHeat;
+
+        float segment(vec2 p, vec2 a, vec2 b) {
+          vec2 ab = b - a;
+          float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 0.001), 0.0, 1.0);
+          return length(p - a - t * ab);
+        }
+
+        void main() {
+          vec2 p = aPoint.xy + uDrift;
+          float ripple = 0.0, reveal = 1.0;
+          if (uOpening.z >= 0.0) {
+            vec2 radial = p - uOpening.xy * uSize;
+            float distance = length(radial);
+            float speed = length(uSize) * 0.17;
+            float radius = max(0.0, uOpening.z - 0.12) * speed;
+            float ring = exp(-pow((distance - radius) / 70.0, 2.0));
+            ripple = ring * (1.0 - smoothstep(3.8, 5.7, uOpening.z));
+            reveal = mix(1.0 - smoothstep(radius - 110.0, radius + 110.0, distance), 1.0, smoothstep(3.6, 5.3, uOpening.z));
+            p += radial / max(distance, 1.0) * ripple * 4.0;
+          }
+
+          float w = 0.5 + 0.30 * sin(p.x * 0.010 + p.y * 0.009 - uTime * 0.65) + 0.20 * sin(p.x * -0.006 + p.y * 0.013 - uTime * 0.43);
+          float heat = 0.0;
+          for (int i = 0; i < 23; i++) {
+            float life = min(uTrail[i].z, uTrail[i + 1].z);
+            float d = segment(p, uTrail[i].xy, uTrail[i + 1].xy);
+            if (life > 0.0 && d < 4.5) heat = 1.0;
+          }
+
+          float edge = smoothstep(20.0, 140.0, p.y) * (1.0 - smoothstep(uSize.y - 160.0, uSize.y, p.y));
+          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - 180.0) / 130.0, 2.0));
+          vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * quiet * reveal + ripple * 0.08) * edge * step(0.10, aPoint.z);
+          vHeat = max(heat, min(1.0, ripple * 0.14)) * edge * step(0.10, aPoint.z);
+          vKind = mod(floor(aPoint.z * 31.0), 3.0);
+
+          float readability = 1.0;
+          for (int i = 0; i < 8; i++) {
+            vec4 area = uTextAreas[i];
+            if (area.z > 0.0) {
+              vec2 outside = max(abs(p - area.xy) - area.zw, vec2(0.0));
+              float cover = 1.0 - smoothstep(0.0, 88.0, length(outside));
+              readability = min(readability, 1.0 - cover * 0.85);
+            }
+          }
+          vAlpha *= readability;
+          vHeat *= readability;
+
+          gl_Position = vec4(p.x / uSize.x * 2.0 - 1.0, 1.0 - p.y / uSize.y * 2.0, 0.0, 1.0);
+          gl_PointSize = (min(uCell * 0.82, 5.0) + ripple * 0.35) * uDpr;
+        }
+      `;
+
+      const fragment = `
+        precision mediump float;
+        uniform mediump float uDark;
+        varying float vAlpha, vKind, vHeat;
+
+        float box(vec2 p, vec2 c, float r) {
+          return 1.0 - smoothstep(r - 0.045, r + 0.045, max(abs(p.x - c.x), abs(p.y - c.y)));
+        }
+
+        void main() {
+          vec2 p = gl_PointCoord - 0.5;
+          float d = length(p);
+          float glyph;
+          if (vKind < 0.5) glyph = 1.0 - smoothstep(0.17, 0.23, d);
+          else if (vKind < 1.5) glyph = (1.0 - smoothstep(0.35, 0.42, d)) * smoothstep(0.12, 0.19, d);
+          else glyph = max(box(p, vec2(-0.12, -0.12), 0.20), box(p, vec2(0.12, 0.12), 0.20));
+
+          float a = glyph * mix(vAlpha, 0.66, vHeat);
+          vec3 col = mix(vec3(0.19, 0.40, 0.34), vec3(0.02, 0.59, 0.35), vHeat);
+          if (uDark > 0.5) {
+            col = mix(vec3(0.52, 0.52, 0.54), vec3(0.86, 0.86, 0.88), vHeat);
+          }
+          gl_FragColor = vec4(col * a, a);
+        }
+      `;
+
+      function compileShader(type, source) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          gl.deleteShader(s);
+          throw new Error('Shader compile failed');
+        }
+        return s;
+      }
+
+      let program, buffer;
+      try {
+        const vs = compileShader(gl.VERTEX_SHADER, vertex);
+        const fs = compileShader(gl.FRAGMENT_SHADER, fragment);
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Program link failed');
+      } catch (err) {
+        canvas.remove();
+        return;
+      }
+
+      gl.useProgram(program);
+      buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      const attr = gl.getAttribLocation(program, 'aPoint');
+      gl.enableVertexAttribArray(attr);
+      gl.vertexAttribPointer(attr, 3, gl.FLOAT, false, 0, 0);
+
+      const uniforms = Object.fromEntries(
+        ['uSize', 'uDrift', 'uTime', 'uDpr', 'uCell', 'uOpening', 'uDark', 'uTrail[0]', 'uTextAreas[0]'].map((n) => [
+          n,
+          gl.getUniformLocation(program, n)
+        ])
+      );
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const coarse = window.matchMedia('(pointer: coarse)');
+      let width = 1, height = 1, count = 0, dpr = 1, cell = 7;
+      let dx = 0, dy = 0, tx = 0, ty = 0;
+      let trail = [];
+      const packedTrail = new Float32Array(72);
+      const textAreas = new Float32Array(32);
+      let textDirty = true;
+      let openingStart = performance.now();
+      let openingX = 0.5, openingY = 0.45;
+      let lastTime = 0, simTime = 0;
+
+      function measureTextAreas() {
+        textAreas.fill(0);
+        textDirty = false;
+        if (document.body.classList.contains('is-pure-canvas')) return;
+        const origin = host.getBoundingClientRect();
+        const nodes = Array.from(host.querySelectorAll('[data-quiet-zone]:not(.is-hidden)')).slice(0, 8);
+        nodes.forEach((node, i) => {
+          const r = node.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          textAreas.set(
+            [
+              r.left - origin.left + r.width / 2,
+              r.top - origin.top + r.height / 2,
+              r.width / 2 + 10,
+              r.height / 2 + 8
+            ],
+            i * 4
+          );
+        });
+      }
+
+      function resizeField() {
+        textDirty = true;
+        width = Math.max(1, host.clientWidth);
+        height = Math.max(1, host.clientHeight);
+        dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+        cell = Math.max(coarse.matches ? 8 : 6, Math.sqrt((width * height) / 75000));
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        const points = [];
+        let seed = 71;
+        for (let y = -cell; y < height + cell; y += cell) {
+          for (let x = -cell; x < width + cell; x += cell) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            points.push(x, y, seed / 4294967296);
+          }
+        }
+        count = points.length / 3;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+      }
+
+      window.addEventListener('pointermove', (e) => {
+        if (reduced.matches || e.pointerType === 'touch') return;
+        const r = host.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        if (y < -40 || y > height + 40) return;
+        tx = (x / width - 0.5) * -16;
+        ty = (y / height - 0.5) * -12;
+        const now = performance.now();
+        const prev = trail[trail.length - 1];
+        if (!prev || Math.hypot(x - prev.x, y - prev.y) > 4 || now - prev.t > 40) {
+          trail.push({ x, y, t: now });
+          if (trail.length > 24) trail.shift();
+        }
+      }, { passive: true });
+
+      host.addEventListener('pointerleave', () => {
+        tx = 0;
+        ty = 0;
+      });
+
+      host.addEventListener('click', (e) => {
+        if (window.tregParticles) window.tregParticles.pulseFromEvent(e);
+      });
+
+      new ResizeObserver(resizeField).observe(host);
+      resizeField();
+
+      function tickField(now) {
+        if (!document.hidden) {
+          if (textDirty) measureTextAreas();
+          const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0;
+          lastTime = now;
+          if (!reduced.matches) simTime += dt;
+
+          const ease = 1 - Math.exp(-dt * 7);
+          dx += (tx - dx) * ease;
+          dy += (ty - dy) * ease;
+
+          const lifetime = 550;
+          packedTrail.fill(0);
+          trail = trail.filter((p) => now - p.t < lifetime);
+          for (let i = 0; i < trail.length; i++) {
+            packedTrail[i * 3] = trail[i].x;
+            packedTrail[i * 3 + 1] = trail[i].y;
+            packedTrail[i * 3 + 2] = 1 - (now - trail[i].t) / lifetime;
+          }
+
+          const openingElapsed = openingStart >= 0 ? (now - openingStart) / 1000 : -1;
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ? 1 : 0;
+
+          gl.uniform2f(uniforms.uSize, width, height);
+          gl.uniform2f(uniforms.uDrift, dx, dy);
+          gl.uniform1f(uniforms.uTime, simTime);
+          gl.uniform1f(uniforms.uDpr, dpr);
+          gl.uniform1f(uniforms.uCell, cell);
+          gl.uniform1f(uniforms.uDark, isDark);
+          gl.uniform3f(uniforms.uOpening, openingX, openingY, openingElapsed < 6.0 ? openingElapsed : -1);
+          gl.uniform3fv(uniforms['uTrail[0]'], packedTrail);
+          gl.uniform4fv(uniforms['uTextAreas[0]'], textAreas);
+
+          gl.clearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.drawArrays(gl.POINTS, 0, count);
+        }
+        requestAnimationFrame(tickField);
+      }
+      requestAnimationFrame(tickField);
+
+      window.tregParticles = {
+        pulseFromEvent(e) {
+          const r = host.getBoundingClientRect();
+          openingX = e && e.clientX ? (e.clientX - r.left) / width : 0.5;
+          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.45;
+          openingStart = performance.now();
+        },
+        invalidateText() {
+          textDirty = true;
+        }
+      };
+    })();
+
+    // 交互控制绑定
+    const hostStage = document.getElementById('tregFieldStage');
+    const specimenCenter = document.getElementById('specimenCenter');
+
+    document.getElementById('pulseTriggerBtn').addEventListener('click', () => {
+      if (window.tregParticles) window.tregParticles.pulseFromEvent();
+    });
+
+    document.getElementById('toggleAuraBtn').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      const isOff = hostStage.classList.toggle('is-aura-off');
+      btn.classList.toggle('is-active', !isOff);
+    });
+
+    document.getElementById('toggleTitleBtn').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      const isHidden = specimenCenter.classList.toggle('is-hidden');
+      btn.classList.toggle('is-active', !isHidden);
+      if (window.tregParticles) window.tregParticles.invalidateText();
+    });
+
+    document.getElementById('toggleThemeBtn').addEventListener('click', () => {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('themeBtnLabel').textContent = next === 'dark' ? '浅色模式' : '深色模式';
+    });
+
+    function togglePureCanvas() {
+      document.body.classList.toggle('is-pure-canvas');
+      if (window.tregParticles) window.tregParticles.invalidateText();
+    }
+
+    document.getElementById('pureCanvasBtn').addEventListener('click', togglePureCanvas);
+    document.getElementById('exitPureBtn').addEventListener('click', togglePureCanvas);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'h' || e.key === 'H') togglePureCanvas();
+    });
+  </script>
+</body>
+</html>

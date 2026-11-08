@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UI Curio Vault — 视觉、着色器与微交互奇物收藏馆</title>
+  <meta name="description" content="收藏好玩、美观且富有物理质感的原生 HTML / CSS / WebGL 视觉与微交互小例子。" />
+  <link rel="icon" type="image/png" sizes="256x256" href="./assets/favicon.png?v=2" />
+  <link rel="preload" as="font" type="font/woff2" href="./assets/fonts/inter-latin.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="./assets/fonts/GeistPixel-Square.woff2" crossorigin />
+  <link rel="stylesheet" href="./assets/fonts/fonts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" />
+  <style>
+    @font-face {
+      font-family: "Geist Pixel";
+      src: url("./assets/fonts/GeistPixel-Square.woff2") format("woff2"),
+           url("https://cdn.jsdelivr.net/npm/geist@1.8.2/dist/fonts/geist-pixel/GeistPixel-Square.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+      --font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+      --bg-page: #f8f8f8;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f2f2f0;
+      --bg-subtle-hover: #e6e6e3;
+      --text-primary: #0d0d0d;
+      --text-secondary: #6c6c6c;
+      --text-muted: #8f8f8f;
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-default: rgba(0, 0, 0, 0.09);
+      --shadow-card: 0 22px 48px -12px rgba(0, 0, 0, 0.07), 0 4px 14px -2px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      --btn-dark-bg: #17181c;
+      --btn-dark-hover: #27272a;
+      --btn-dark-text: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg-page: #121212;
+      --bg-surface: #181818;
+      --bg-subtle: #222226;
+      --bg-subtle-hover: #2c2c32;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(202, 202, 202, 0.7);
+      --text-muted: #767676;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-default: rgba(255, 255, 255, 0.12);
+      --shadow-card: 0 24px 52px -12px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      --btn-dark-bg: #f4f4f5;
+      --btn-dark-hover: #e4e4e7;
+      --btn-dark-text: #09090b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 18px;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      transition: background-color 240ms var(--ease-standard), color 240ms var(--ease-standard);
+    }
+
+    /* 一体化顶部羽化模糊遮罩 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 142px;
+      z-index: 90;
+      pointer-events: none;
+      background: linear-gradient(
+        to bottom,
+        var(--bg-page) 0%,
+        color-mix(in srgb, var(--bg-page) 96%, transparent) 26%,
+        color-mix(in srgb, var(--bg-page) 82%, transparent) 50%,
+        color-mix(in srgb, var(--bg-page) 42%, transparent) 76%,
+        transparent 100%
+      );
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 38%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.28) 84%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 38%,
+        rgba(0, 0, 0, 0.78) 62%,
+        rgba(0, 0, 0, 0.28) 84%,
+        transparent 100%
+      );
+    }
+
+    /* WebGL 微字形流场画布 + 环境弥散光场 */
+    .treg-field-stage {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      margin-top: -58px;
+      padding-top: 58px;
+    }
+
+    .treg-field-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 22%, rgba(220, 232, 223, 0.62), transparent 58%),
+        radial-gradient(ellipse at 39% 62%, rgba(139, 187, 172, 0.34), transparent 52%),
+        radial-gradient(ellipse at 63% 56%, rgba(184, 201, 196, 0.36), transparent 56%),
+        radial-gradient(ellipse at 54% 74%, rgba(79, 140, 121, 0.24), transparent 50%);
+      filter: blur(36px);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.32) 64px,
+        #000 156px,
+        #000 calc(100% - 160px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.32) 64px,
+        #000 156px,
+        #000 calc(100% - 160px),
+        transparent 100%
+      );
+      animation: gatewayAura 16s ease-in-out infinite alternate;
+    }
+
+    [data-theme="dark"] .treg-field-stage::before {
+      display: none;
+    }
+
+    @keyframes gatewayAura {
+      from { transform: translate3d(-14px, 8px, 0) scale(0.98); }
+      to   { transform: translate3d(14px, -8px, 0) scale(1.03); }
+    }
+
+    .hero-particles {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      contain: strict;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.28) 64px,
+        #000 152px,
+        #000 calc(100% - 150px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0px,
+        rgba(0, 0, 0, 0.28) 64px,
+        #000 152px,
+        #000 calc(100% - 150px),
+        transparent 100%
+      );
+    }
+
+    /* 顶栏 */
+    .navbar-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar {
+      max-width: 1320px;
+      margin: 0 auto;
+      height: 58px;
+      padding: 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-size: 14.5px;
+      transition: transform 160ms var(--ease-snappy), opacity 160ms var(--ease-standard);
+    }
+
+    .brand-link:hover {
+      opacity: 0.85;
+    }
+
+    .brand-logo {
+      height: 22px;
+      width: auto;
+      display: block;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: background-color 160ms var(--ease-standard), color 160ms var(--ease-standard), transform 140ms var(--ease-snappy);
+    }
+
+    [data-theme="dark"] .nav-icon-btn {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .nav-icon-btn:hover {
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .theme-switch-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 56px;
+      height: 30px;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.04);
+      cursor: pointer;
+    }
+
+    [data-theme="dark"] .theme-switch-btn {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .theme-switch-track-icon {
+      position: relative;
+      z-index: 1;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: color 220ms var(--ease-standard), transform 320ms var(--ease-spring);
+    }
+
+    .theme-switch-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+      transition: transform 340ms var(--ease-spring), background-color 240ms var(--ease-standard);
+    }
+
+    [data-theme="dark"] .theme-switch-thumb {
+      transform: translate3d(26px, 0, 0);
+      background: #27272a;
+    }
+
+    html:not([data-theme="dark"]) .theme-switch-sun {
+      color: #f59e0b;
+    }
+
+    [data-theme="dark"] .theme-switch-moon {
+      color: #ffffff;
+    }
+
+    /* HERO */
+    .hero-section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 64px 24px 44px;
+      text-align: center;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      cursor: pointer;
+      transition: transform 160ms var(--ease-snappy);
+    }
+
+    .hero-pill:active {
+      transform: scale(0.95);
+    }
+
+    .hero-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .hero-title {
+      font-family: "Geist Pixel", var(--font-mono);
+      font-size: clamp(32px, 3.8vw, 46px);
+      font-weight: 400;
+      line-height: 1.15;
+      margin-bottom: 14px;
+      color: var(--text-primary);
+    }
+
+    .hero-subtitle {
+      max-width: 640px;
+      margin: 0 auto;
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    /* VAULT GRID */
+    .vault-section {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 12px 32px 120px;
+    }
+
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .curio-card {
+      background: var(--bg-surface);
+      border-radius: 22px;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 280ms var(--ease-spring), box-shadow 280ms var(--ease-spring);
+    }
+
+    .curio-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .curio-preview-box {
+      position: relative;
+      height: 210px;
+      background:
+        radial-gradient(ellipse at 50% 25%, rgba(220, 232, 223, 0.78), transparent 60%),
+        radial-gradient(ellipse at 35% 65%, rgba(139, 187, 172, 0.48), transparent 55%),
+        radial-gradient(ellipse at 68% 60%, rgba(79, 140, 121, 0.34), transparent 55%),
+        #f4f6f5;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    [data-theme="dark"] .curio-preview-box {
+      background:
+        radial-gradient(ellipse at 50% 35%, rgba(34, 197, 94, 0.14), transparent 60%),
+        #141416;
+    }
+
+    .curio-preview-dots {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(16, 185, 129, 0.32) 1.25px, transparent 1.25px);
+      background-size: 10px 10px;
+      mask-image: radial-gradient(circle at center, #000 35%, transparent 85%);
+      -webkit-mask-image: radial-gradient(circle at center, #000 35%, transparent 85%);
+      pointer-events: none;
+    }
+
+    .curio-preview-tag {
+      position: relative;
+      z-index: 1;
+      font-family: "Geist Pixel", var(--font-mono);
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    .curio-preview-sub {
+      position: relative;
+      z-index: 1;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+    }
+
+    [data-theme="dark"] .curio-preview-sub {
+      background: rgba(24, 24, 28, 0.78);
+    }
+
+    .curio-body {
+      padding: 22px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .curio-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .curio-num {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #059669;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    [data-theme="dark"] .curio-num {
+      color: #34d399;
+      background: rgba(52, 211, 153, 0.14);
+    }
+
+    .curio-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .curio-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .curio-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    .curio-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .curio-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .curio-btn {
+      flex: 1;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-default);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: transform 150ms var(--ease-snappy), background-color 150ms var(--ease-standard);
+    }
+
+    .curio-btn:hover {
+      background: var(--bg-subtle-hover);
+    }
+
+    .curio-btn:active {
+      transform: scale(0.96);
+    }
+
+    .curio-btn-primary {
+      background: var(--btn-dark-bg);
+      color: var(--btn-dark-text);
+      border-color: transparent;
+    }
+
+    .curio-btn-primary:hover {
+      background: var(--btn-dark-hover);
+    }
+
+    .curio-card-placeholder {
+      border: 1px dashed var(--border-default);
+      background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
+      box-shadow: none;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 28px;
+      text-align: center;
+      min-height: 360px;
+    }
+
+    .placeholder-title {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .placeholder-sub {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      max-width: 260px;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶栏 -->
+  <header class="navbar-wrap">
+    <nav class="navbar" aria-label="主导航">
+      <a href="https://ownai.icu/" target="_blank" rel="noopener noreferrer" class="brand-link">
+        <img src="./assets/ownai-logo.png" alt="OwnAI Logo" class="brand-logo" />
+        <span>UI Curio Vault</span>
+      </a>
+      <div class="nav-right">
+        <a href="https://github.com/Shark-Overlord/ui-curio-vault" target="_blank" rel="noopener noreferrer" class="nav-icon-btn" title="在 GitHub 上查看仓库" aria-label="GitHub 仓库">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <button type="button" class="theme-switch-btn" id="themeToggleBtn" title="切换深浅色主题" aria-label="切换深浅色主题">
+          <span class="theme-switch-thumb"></span>
+          <span class="theme-switch-track-icon theme-switch-sun" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+            </svg>
+          </span>
+          <span class="theme-switch-track-icon theme-switch-moon" aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- 顶部流场背景舞台 + 展柜区 -->
+  <div class="treg-field-stage" id="tregFieldStage">
+    <section class="hero-section">
+      <div class="hero-pill" id="heroPulseBtn" data-quiet-zone title="点击释放背景粒子波纹">
+        <span class="hero-pill-dot"></span>
+        <span>CURATED WEB SPECIMENS · 点击触发粒子波纹</span>
+      </div>
+      <h1 class="hero-title" id="heroTitle" data-quiet-zone>UI Curio Vault</h1>
+      <p class="hero-subtitle" data-quiet-zone>
+        专门收藏好玩、美观且零依赖的 HTML / WebGL / CSS 视觉背景与微交互奇物。每一个例子均可独立运行或一键移植。
+      </p>
+    </section>
+
+    <section class="vault-section">
+      <div class="vault-grid">
+
+        <!-- 藏品 #01: WebGL 微字形流场背景 -->
+        <article class="curio-card" data-quiet-zone>
+          <a href="./examples/01-webgl-glyph-field/index.html" class="curio-preview-box">
+            <div class="curio-preview-dots"></div>
+            <span class="curio-preview-tag">Glyph Field</span>
+            <span class="curio-preview-sub">WebGL 点阵着色器 + 翡翠弥散光场</span>
+          </a>
+          <div class="curio-body">
+            <div class="curio-meta">
+              <span class="curio-num">#01</span>
+              <div class="curio-tags">
+                <span class="curio-tag">WebGL</span>
+                <span class="curio-tag">Ambient Aura</span>
+                <span class="curio-tag">0-Dep</span>
+              </div>
+            </div>
+            <h2 class="curio-title">WebGL 微字形流场与弥散光场背景</h2>
+            <p class="curio-desc">
+              来自 OwnAi-motion-skill 展示页的标志性背景：包含顶部无缝羽化遮罩、四重呼吸态翡翠弥散光场、3 种微字形点阵流场、24 段光标热力轨迹、径向波纹冲击以及前景文字静默避让。
+            </p>
+            <div class="curio-actions">
+              <a href="./examples/01-webgl-glyph-field/index.html" class="curio-btn curio-btn-primary">
+                <span>交互预览</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </a>
+              <a href="./examples/01-webgl-glyph-field/minimal.html" target="_blank" class="curio-btn">
+                <span>纯净底座</span>
+              </a>
+              <button type="button" class="curio-btn" id="copyMinimalBtn">
+                <span id="copyMinimalLabel">复制源码</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- 待入馆占位卡片 -->
+        <article class="curio-card curio-card-placeholder" data-quiet-zone>
+          <div class="placeholder-title">NEXT CURIO #02</div>
+          <p class="placeholder-sub">
+            后续遇到好看的背景、着色器或有趣的微交互小例子，直接放入 <code>examples/02-xxx/</code> 即可入馆。
+          </p>
+        </article>
+
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // WebGL 微字形流场背景
+    (function initTregGlyphField() {
+      const host = document.getElementById('tregFieldStage');
+      if (!host) return;
+      const canvas = document.createElement('canvas');
+      canvas.className = 'hero-particles';
+      canvas.setAttribute('aria-hidden', 'true');
+      host.prepend(canvas);
+
+      const gl = canvas.getContext('webgl', {
+        alpha: true,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        premultipliedAlpha: true,
+        powerPreference: 'low-power'
+      });
+      if (!gl) {
+        canvas.remove();
+        return;
+      }
+
+      const vertex = `
+        precision highp float;
+        attribute vec3 aPoint;
+        uniform vec2 uSize, uDrift;
+        uniform float uTime, uDpr, uCell;
+        uniform vec3 uOpening;
+        uniform vec3 uTrail[24];
+        uniform vec4 uTextAreas[8];
+        varying float vAlpha, vKind, vHeat;
+
+        float segment(vec2 p, vec2 a, vec2 b) {
+          vec2 ab = b - a;
+          float t = clamp(dot(p - a, ab) / max(dot(ab, ab), 0.001), 0.0, 1.0);
+          return length(p - a - t * ab);
+        }
+
+        void main() {
+          vec2 p = aPoint.xy + uDrift;
+          float ripple = 0.0, reveal = 1.0;
+          if (uOpening.z >= 0.0) {
+            vec2 radial = p - uOpening.xy * uSize;
+            float distance = length(radial);
+            float speed = length(uSize) * 0.17;
+            float radius = max(0.0, uOpening.z - 0.12) * speed;
+            float ring = exp(-pow((distance - radius) / 70.0, 2.0));
+            ripple = ring * (1.0 - smoothstep(3.8, 5.7, uOpening.z));
+            reveal = mix(1.0 - smoothstep(radius - 110.0, radius + 110.0, distance), 1.0, smoothstep(3.6, 5.3, uOpening.z));
+            p += radial / max(distance, 1.0) * ripple * 4.0;
+          }
+
+          float w = 0.5 + 0.30 * sin(p.x * 0.010 + p.y * 0.009 - uTime * 0.65) + 0.20 * sin(p.x * -0.006 + p.y * 0.013 - uTime * 0.43);
+          float heat = 0.0;
+          for (int i = 0; i < 23; i++) {
+            float life = min(uTrail[i].z, uTrail[i + 1].z);
+            float d = segment(p, uTrail[i].xy, uTrail[i + 1].xy);
+            if (life > 0.0 && d < 4.5) heat = 1.0;
+          }
+
+          float edge = smoothstep(20.0, 140.0, p.y) * (1.0 - smoothstep(uSize.y - 160.0, uSize.y, p.y));
+          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - 180.0) / 130.0, 2.0));
+          vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * quiet * reveal + ripple * 0.08) * edge * step(0.10, aPoint.z);
+          vHeat = max(heat, min(1.0, ripple * 0.14)) * edge * step(0.10, aPoint.z);
+          vKind = mod(floor(aPoint.z * 31.0), 3.0);
+
+          float readability = 1.0;
+          for (int i = 0; i < 8; i++) {
+            vec4 area = uTextAreas[i];
+            if (area.z > 0.0) {
+              vec2 outside = max(abs(p - area.xy) - area.zw, vec2(0.0));
+              float cover = 1.0 - smoothstep(0.0, 88.0, length(outside));
+              readability = min(readability, 1.0 - cover * 0.85);
+            }
+          }
+          vAlpha *= readability;
+          vHeat *= readability;
+
+          gl_Position = vec4(p.x / uSize.x * 2.0 - 1.0, 1.0 - p.y / uSize.y * 2.0, 0.0, 1.0);
+          gl_PointSize = (min(uCell * 0.82, 5.0) + ripple * 0.35) * uDpr;
+        }
+      `;
+
+      const fragment = `
+        precision mediump float;
+        uniform mediump float uDark;
+        varying float vAlpha, vKind, vHeat;
+
+        float box(vec2 p, vec2 c, float r) {
+          return 1.0 - smoothstep(r - 0.045, r + 0.045, max(abs(p.x - c.x), abs(p.y - c.y)));
+        }
+
+        void main() {
+          vec2 p = gl_PointCoord - 0.5;
+          float d = length(p);
+          float glyph;
+          if (vKind < 0.5) glyph = 1.0 - smoothstep(0.17, 0.23, d);
+          else if (vKind < 1.5) glyph = (1.0 - smoothstep(0.35, 0.42, d)) * smoothstep(0.12, 0.19, d);
+          else glyph = max(box(p, vec2(-0.12, -0.12), 0.20), box(p, vec2(0.12, 0.12), 0.20));
+
+          float a = glyph * mix(vAlpha, 0.66, vHeat);
+          vec3 col = mix(vec3(0.19, 0.40, 0.34), vec3(0.02, 0.59, 0.35), vHeat);
+          if (uDark > 0.5) {
+            col = mix(vec3(0.52, 0.52, 0.54), vec3(0.86, 0.86, 0.88), vHeat);
+          }
+          gl_FragColor = vec4(col * a, a);
+        }
+      `;
+
+      function compileShader(type, source) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          gl.deleteShader(s);
+          throw new Error('Shader compile failed');
+        }
+        return s;
+      }
+
+      let program, buffer;
+      try {
+        const vs = compileShader(gl.VERTEX_SHADER, vertex);
+        const fs = compileShader(gl.FRAGMENT_SHADER, fragment);
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error('Program link failed');
+      } catch (err) {
+        canvas.remove();
+        return;
+      }
+
+      gl.useProgram(program);
+      buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      const attr = gl.getAttribLocation(program, 'aPoint');
+      gl.enableVertexAttribArray(attr);
+      gl.vertexAttribPointer(attr, 3, gl.FLOAT, false, 0, 0);
+
+      const uniforms = Object.fromEntries(
+        ['uSize', 'uDrift', 'uTime', 'uDpr', 'uCell', 'uOpening', 'uDark', 'uTrail[0]', 'uTextAreas[0]'].map((n) => [
+          n,
+          gl.getUniformLocation(program, n)
+        ])
+      );
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const coarse = window.matchMedia('(pointer: coarse)');
+      let width = 1, height = 1, count = 0, dpr = 1, cell = 7;
+      let dx = 0, dy = 0, tx = 0, ty = 0;
+      let trail = [];
+      const packedTrail = new Float32Array(72);
+      const textAreas = new Float32Array(32);
+      let textDirty = true;
+      let openingStart = performance.now();
+      let openingX = 0.5, openingY = 0.22;
+      let lastTime = 0, simTime = 0;
+
+      function measureTextAreas() {
+        textAreas.fill(0);
+        textDirty = false;
+        const origin = host.getBoundingClientRect();
+        const nodes = Array.from(host.querySelectorAll('[data-quiet-zone]')).slice(0, 8);
+        nodes.forEach((node, i) => {
+          const r = node.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          textAreas.set(
+            [
+              r.left - origin.left + r.width / 2,
+              r.top - origin.top + r.height / 2,
+              r.width / 2 + 10,
+              r.height / 2 + 8
+            ],
+            i * 4
+          );
+        });
+      }
+
+      function resizeField() {
+        textDirty = true;
+        width = Math.max(1, host.clientWidth);
+        height = Math.max(1, host.clientHeight);
+        dpr = Math.min(window.devicePixelRatio || 1, 1.35);
+        cell = Math.max(coarse.matches ? 8 : 6, Math.sqrt((width * height) / 75000));
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        const points = [];
+        let seed = 71;
+        for (let y = -cell; y < height + cell; y += cell) {
+          for (let x = -cell; x < width + cell; x += cell) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            points.push(x, y, seed / 4294967296);
+          }
+        }
+        count = points.length / 3;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+      }
+
+      window.addEventListener('pointermove', (e) => {
+        if (reduced.matches || e.pointerType === 'touch') return;
+        const r = host.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        if (y < -40 || y > height + 40) return;
+        tx = (x / width - 0.5) * -16;
+        ty = (y / height - 0.5) * -12;
+        const now = performance.now();
+        const prev = trail[trail.length - 1];
+        if (!prev || Math.hypot(x - prev.x, y - prev.y) > 4 || now - prev.t > 40) {
+          trail.push({ x, y, t: now });
+          if (trail.length > 24) trail.shift();
+        }
+      }, { passive: true });
+
+      host.addEventListener('pointerleave', () => {
+        tx = 0;
+        ty = 0;
+      });
+
+      new ResizeObserver(resizeField).observe(host);
+      resizeField();
+
+      function tickField(now) {
+        if (!document.hidden) {
+          if (textDirty) measureTextAreas();
+          const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0;
+          lastTime = now;
+          if (!reduced.matches) simTime += dt;
+
+          const ease = 1 - Math.exp(-dt * 7);
+          dx += (tx - dx) * ease;
+          dy += (ty - dy) * ease;
+
+          const lifetime = 550;
+          packedTrail.fill(0);
+          trail = trail.filter((p) => now - p.t < lifetime);
+          for (let i = 0; i < trail.length; i++) {
+            packedTrail[i * 3] = trail[i].x;
+            packedTrail[i * 3 + 1] = trail[i].y;
+            packedTrail[i * 3 + 2] = 1 - (now - trail[i].t) / lifetime;
+          }
+
+          const openingElapsed = openingStart >= 0 ? (now - openingStart) / 1000 : -1;
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ? 1 : 0;
+
+          gl.uniform2f(uniforms.uSize, width, height);
+          gl.uniform2f(uniforms.uDrift, dx, dy);
+          gl.uniform1f(uniforms.uTime, simTime);
+          gl.uniform1f(uniforms.uDpr, dpr);
+          gl.uniform1f(uniforms.uCell, cell);
+          gl.uniform1f(uniforms.uDark, isDark);
+          gl.uniform3f(uniforms.uOpening, openingX, openingY, openingElapsed < 6.0 ? openingElapsed : -1);
+          gl.uniform3fv(uniforms['uTrail[0]'], packedTrail);
+          gl.uniform4fv(uniforms['uTextAreas[0]'], textAreas);
+
+          gl.clearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.drawArrays(gl.POINTS, 0, count);
+        }
+        requestAnimationFrame(tickField);
+      }
+      requestAnimationFrame(tickField);
+
+      window.tregParticles = {
+        pulseFromEvent(e) {
+          const r = host.getBoundingClientRect();
+          openingX = e && e.clientX ? (e.clientX - r.left) / width : 0.5;
+          openingY = e && e.clientY ? (e.clientY - r.top) / height : 0.22;
+          openingStart = performance.now();
+        },
+        invalidateText() {
+          textDirty = true;
+        }
+      };
+    })();
+
+    document.getElementById('heroPulseBtn').addEventListener('click', (e) => {
+      if (window.tregParticles) window.tregParticles.pulseFromEvent(e);
+    });
+
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+    });
+
+    const copyMinimalBtn = document.getElementById('copyMinimalBtn');
+    const copyMinimalLabel = document.getElementById('copyMinimalLabel');
+    copyMinimalBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('./examples/01-webgl-glyph-field/minimal.html');
+        const code = await res.text();
+        await navigator.clipboard.writeText(code);
+        copyMinimalLabel.textContent = '已复制 ✓';
+        setTimeout(() => {
+          copyMinimalLabel.textContent = '复制源码';
+        }, 1800);
+      } catch (err) {
+        window.open('./examples/01-webgl-glyph-field/minimal.html', '_blank');
+      }
+    });
+  </script>
+</body>
+</html>
