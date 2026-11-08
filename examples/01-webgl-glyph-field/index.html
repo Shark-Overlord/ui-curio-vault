@@ -92,11 +92,12 @@
       contain: strict;
     }
 
-    /* ================= 悬浮色彩控制面板 ================= */
+    /* ================= 悬浮色彩控制面板（居中） ================= */
     .palette-widget {
       position: fixed;
-      right: 24px;
-      bottom: 24px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       z-index: 100;
       width: 288px;
       border-radius: 20px;
