@@ -24,91 +24,39 @@
       padding: 0;
     }
 
+    html,
     body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       font-family: "Inter", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg-page);
       color: var(--text-primary);
-      overflow-x: hidden;
       transition: background-color 240ms var(--ease-standard), color 240ms var(--ease-standard);
     }
 
-    /* 1. 顶部羽化模糊遮罩（让顶栏与下方背景及滚动内容无缝融为一体，无硬切边） */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0 0 auto 0;
-      height: 142px;
-      z-index: 90;
-      pointer-events: none;
-      background: linear-gradient(
-        to bottom,
-        var(--bg-page) 0%,
-        color-mix(in srgb, var(--bg-page) 96%, transparent) 26%,
-        color-mix(in srgb, var(--bg-page) 82%, transparent) 50%,
-        color-mix(in srgb, var(--bg-page) 42%, transparent) 76%,
-        transparent 100%
-      );
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      -webkit-mask-image: linear-gradient(
-        to bottom,
-        #000 0%,
-        #000 38%,
-        rgba(0, 0, 0, 0.78) 62%,
-        rgba(0, 0, 0, 0.28) 84%,
-        transparent 100%
-      );
-      mask-image: linear-gradient(
-        to bottom,
-        #000 0%,
-        #000 38%,
-        rgba(0, 0, 0, 0.78) 62%,
-        rgba(0, 0, 0, 0.28) 84%,
-        transparent 100%
-      );
-      transition: background 240ms var(--ease-standard);
-    }
-
-    /* 2. WebGL 微字形流场画布容器 + 环境弥散光场 */
+    /* 全屏 WebGL 微字形流场画布容器 + 环境弥散光场 */
     .treg-field-stage {
-      position: relative;
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
       isolation: isolate;
       overflow: hidden;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
 
     .treg-field-stage::before {
       content: "";
       position: absolute;
-      inset: 0;
+      inset: -8%;
       z-index: -2;
       pointer-events: none;
       background:
-        radial-gradient(ellipse at 50% 22%, rgba(220, 232, 223, 0.62), transparent 58%),
-        radial-gradient(ellipse at 39% 62%, rgba(139, 187, 172, 0.34), transparent 52%),
-        radial-gradient(ellipse at 63% 56%, rgba(184, 201, 196, 0.36), transparent 56%),
-        radial-gradient(ellipse at 54% 74%, rgba(79, 140, 121, 0.24), transparent 50%);
+        radial-gradient(ellipse at 50% 22%, rgba(220, 232, 223, 0.68), transparent 62%),
+        radial-gradient(ellipse at 35% 62%, rgba(139, 187, 172, 0.38), transparent 58%),
+        radial-gradient(ellipse at 66% 54%, rgba(184, 201, 196, 0.40), transparent 60%),
+        radial-gradient(ellipse at 54% 78%, rgba(79, 140, 121, 0.28), transparent 56%);
       filter: blur(36px);
-      -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0px,
-        rgba(0, 0, 0, 0.32) 64px,
-        #000 156px,
-        #000 calc(100% - 160px),
-        transparent 100%
-      );
-      mask-image: linear-gradient(
-        to bottom,
-        transparent 0px,
-        rgba(0, 0, 0, 0.32) 64px,
-        #000 156px,
-        #000 calc(100% - 160px),
-        transparent 100%
-      );
       animation: gatewayAura 16s ease-in-out infinite alternate;
     }
 
@@ -129,28 +77,12 @@
       z-index: -1;
       pointer-events: none;
       contain: strict;
-      -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0px,
-        rgba(0, 0, 0, 0.28) 64px,
-        #000 152px,
-        #000 calc(100% - 150px),
-        transparent 100%
-      );
-      mask-image: linear-gradient(
-        to bottom,
-        transparent 0px,
-        rgba(0, 0, 0, 0.28) 64px,
-        #000 152px,
-        #000 calc(100% - 150px),
-        transparent 100%
-      );
     }
   </style>
 </head>
 <body>
 
-  <!-- 纯背景容器 -->
+  <!-- 100% 全屏纯背景容器 -->
   <div class="treg-field-stage" id="tregFieldStage"></div>
 
   <script>
@@ -213,10 +145,8 @@
             if (life > 0.0 && d < 4.5) heat = 1.0;
           }
 
-          float edge = smoothstep(20.0, 140.0, p.y) * (1.0 - smoothstep(uSize.y - 160.0, uSize.y, p.y));
-          float quiet = 1.0 - 0.45 * exp(-pow((p.x - uSize.x * 0.5) / (uSize.x * 0.24), 2.0) - pow((p.y - uSize.y * 0.5) / 130.0, 2.0));
-          vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * quiet * reveal + ripple * 0.08) * edge * step(0.10, aPoint.z);
-          vHeat = max(heat, min(1.0, ripple * 0.14)) * edge * step(0.10, aPoint.z);
+          vAlpha = ((0.045 + 0.26 * pow(w, 1.65)) * reveal + ripple * 0.08) * step(0.10, aPoint.z);
+          vHeat = max(heat, min(1.0, ripple * 0.14)) * step(0.10, aPoint.z);
           vKind = mod(floor(aPoint.z * 31.0), 3.0);
 
           float readability = 1.0;
