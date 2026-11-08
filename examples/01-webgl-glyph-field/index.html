@@ -95,14 +95,14 @@
     /* ================= 底部居中紧凑色条 ================= */
     .color-bar {
       position: fixed;
-      bottom: 28px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 7px 11px;
+      gap: 6px;
+      padding: 5px 8px;
       border-radius: 999px;
       background: var(--panel-bg);
       backdrop-filter: blur(18px);
@@ -113,8 +113,8 @@
 
     .swatch-btn {
       position: relative;
-      width: 24px;
-      height: 24px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       border: none;
       padding: 0;
@@ -124,7 +124,7 @@
     }
 
     .swatch-btn:hover {
-      transform: scale(1.14);
+      transform: scale(1.16);
     }
 
     .swatch-btn:active {
@@ -133,20 +133,20 @@
 
     .swatch-btn.is-active {
       transform: scale(1.12);
-      box-shadow: 0 0 0 2px var(--panel-bg), 0 0 0 4px var(--panel-text);
+      box-shadow: 0 0 0 1.5px var(--panel-bg), 0 0 0 3px var(--panel-text);
     }
 
     .bar-divider {
       width: 1px;
-      height: 16px;
+      height: 11px;
       background: var(--panel-border);
-      margin: 0 2px;
+      margin: 0 1px;
     }
 
     .custom-color-wrap {
       position: relative;
-      width: 24px;
-      height: 24px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       overflow: hidden;
       cursor: pointer;
@@ -156,14 +156,14 @@
     }
 
     .custom-color-wrap:hover {
-      transform: scale(1.14);
+      transform: scale(1.16);
     }
 
     .custom-color-input {
       position: absolute;
-      inset: -6px;
-      width: 36px;
-      height: 36px;
+      inset: -4px;
+      width: 24px;
+      height: 24px;
       opacity: 0;
       cursor: pointer;
     }
