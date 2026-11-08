@@ -123,6 +123,7 @@
       position: relative;
       isolation: isolate;
       overflow: hidden;
+      min-height: 100vh;
       margin-top: -58px;
       padding-top: 58px;
     }
@@ -366,224 +367,6 @@
       line-height: 1.6;
       color: var(--text-secondary);
     }
-
-    /* VAULT GRID */
-    .vault-section {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 12px 32px 120px;
-    }
-
-    .vault-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 24px;
-      align-items: stretch;
-    }
-
-    .curio-card {
-      background: var(--bg-surface);
-      border-radius: 22px;
-      box-shadow: var(--shadow-card);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 280ms var(--ease-spring), box-shadow 280ms var(--ease-spring);
-    }
-
-    .curio-card:hover {
-      transform: translateY(-4px);
-    }
-
-    .curio-preview-box {
-      position: relative;
-      height: 210px;
-      background:
-        radial-gradient(ellipse at 50% 25%, rgba(220, 232, 223, 0.78), transparent 60%),
-        radial-gradient(ellipse at 35% 65%, rgba(139, 187, 172, 0.48), transparent 55%),
-        radial-gradient(ellipse at 68% 60%, rgba(79, 140, 121, 0.34), transparent 55%),
-        #f4f6f5;
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      overflow: hidden;
-      text-decoration: none;
-      color: var(--text-primary);
-    }
-
-    [data-theme="dark"] .curio-preview-box {
-      background:
-        radial-gradient(ellipse at 50% 35%, rgba(34, 197, 94, 0.14), transparent 60%),
-        #141416;
-    }
-
-    .curio-preview-dots {
-      position: absolute;
-      inset: 0;
-      background-image: radial-gradient(rgba(16, 185, 129, 0.32) 1.25px, transparent 1.25px);
-      background-size: 10px 10px;
-      mask-image: radial-gradient(circle at center, #000 35%, transparent 85%);
-      -webkit-mask-image: radial-gradient(circle at center, #000 35%, transparent 85%);
-      pointer-events: none;
-    }
-
-    .curio-preview-tag {
-      position: relative;
-      z-index: 1;
-      font-family: "Geist Pixel", var(--font-mono);
-      font-size: 20px;
-      letter-spacing: -0.01em;
-    }
-
-    .curio-preview-sub {
-      position: relative;
-      z-index: 1;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-secondary);
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.75);
-      backdrop-filter: blur(8px);
-    }
-
-    [data-theme="dark"] .curio-preview-sub {
-      background: rgba(24, 24, 28, 0.78);
-    }
-
-    .curio-body {
-      padding: 22px 24px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      flex: 1;
-    }
-
-    .curio-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .curio-num {
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      font-weight: 500;
-      color: #059669;
-      background: rgba(16, 185, 129, 0.1);
-      padding: 2px 8px;
-      border-radius: 6px;
-    }
-
-    [data-theme="dark"] .curio-num {
-      color: #34d399;
-      background: rgba(52, 211, 153, 0.14);
-    }
-
-    .curio-tags {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .curio-tag {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      background: var(--bg-subtle);
-      padding: 2px 7px;
-      border-radius: 5px;
-    }
-
-    .curio-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-      line-height: 1.35;
-    }
-
-    .curio-desc {
-      font-size: 13px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      flex: 1;
-    }
-
-    .curio-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    .curio-btn {
-      flex: 1;
-      height: 34px;
-      padding: 0 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border-default);
-      background: var(--bg-subtle);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-      font-size: 12px;
-      font-weight: 500;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: transform 150ms var(--ease-snappy), background-color 150ms var(--ease-standard);
-    }
-
-    .curio-btn:hover {
-      background: var(--bg-subtle-hover);
-    }
-
-    .curio-btn:active {
-      transform: scale(0.96);
-    }
-
-    .curio-btn-primary {
-      background: var(--btn-dark-bg);
-      color: var(--btn-dark-text);
-      border-color: transparent;
-    }
-
-    .curio-btn-primary:hover {
-      background: var(--btn-dark-hover);
-    }
-
-    .curio-card-placeholder {
-      border: 1px dashed var(--border-default);
-      background: color-mix(in srgb, var(--bg-surface) 55%, transparent);
-      box-shadow: none;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 28px;
-      text-align: center;
-      min-height: 360px;
-    }
-
-    .placeholder-title {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-    }
-
-    .placeholder-sub {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      max-width: 260px;
-      line-height: 1.55;
-    }
   </style>
 </head>
 <body>
@@ -617,7 +400,7 @@
     </nav>
   </header>
 
-  <!-- 顶部流场背景舞台 + 展柜区 -->
+  <!-- 顶部流场背景舞台 -->
   <div class="treg-field-stage" id="tregFieldStage">
     <section class="hero-section">
       <div class="hero-pill" id="heroPulseBtn" data-quiet-zone title="点击释放背景粒子波纹">
@@ -628,55 +411,6 @@
       <p class="hero-subtitle" data-quiet-zone>
         专门收藏好玩、美观且零依赖的 HTML / WebGL / CSS 视觉背景与微交互奇物。每一个例子均可独立运行或一键移植。
       </p>
-    </section>
-
-    <section class="vault-section">
-      <div class="vault-grid">
-
-        <!-- 藏品 #01: WebGL 微字形流场背景 -->
-        <article class="curio-card" data-quiet-zone>
-          <a href="./examples/01-webgl-glyph-field/index.html" class="curio-preview-box">
-            <div class="curio-preview-dots"></div>
-            <span class="curio-preview-tag">Glyph Field</span>
-            <span class="curio-preview-sub">WebGL 点阵着色器 + 翡翠弥散光场</span>
-          </a>
-          <div class="curio-body">
-            <div class="curio-meta">
-              <span class="curio-num">#01</span>
-              <div class="curio-tags">
-                <span class="curio-tag">WebGL</span>
-                <span class="curio-tag">Ambient Aura</span>
-                <span class="curio-tag">0-Dep</span>
-              </div>
-            </div>
-            <h2 class="curio-title">WebGL 微字形流场与弥散光场背景</h2>
-            <p class="curio-desc">
-              来自 OwnAi-motion-skill 展示页的标志性背景：包含顶部无缝羽化遮罩、四重呼吸态翡翠弥散光场、3 种微字形点阵流场、24 段光标热力轨迹、径向波纹冲击以及前景文字静默避让。
-            </p>
-            <div class="curio-actions">
-              <a href="./examples/01-webgl-glyph-field/index.html" class="curio-btn curio-btn-primary">
-                <span>交互预览</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </a>
-              <a href="./examples/01-webgl-glyph-field/minimal.html" target="_blank" class="curio-btn">
-                <span>纯净底座</span>
-              </a>
-              <button type="button" class="curio-btn" id="copyMinimalBtn">
-                <span id="copyMinimalLabel">复制源码</span>
-              </button>
-            </div>
-          </div>
-        </article>
-
-        <!-- 待入馆占位卡片 -->
-        <article class="curio-card curio-card-placeholder" data-quiet-zone>
-          <div class="placeholder-title">NEXT CURIO #02</div>
-          <p class="placeholder-sub">
-            后续遇到好看的背景、着色器或有趣的微交互小例子，直接放入 <code>examples/02-xxx/</code> 即可入馆。
-          </p>
-        </article>
-
-      </div>
     </section>
   </div>
 
@@ -964,7 +698,7 @@
       };
     })();
 
-    document.getElementById('heroPulseBtn').addEventListener('click', (e) => {
+    document.getElementById('tregFieldStage').addEventListener('click', (e) => {
       if (window.tregParticles) window.tregParticles.pulseFromEvent(e);
     });
 
@@ -972,22 +706,6 @@
       const html = document.documentElement;
       const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       html.setAttribute('data-theme', next);
-    });
-
-    const copyMinimalBtn = document.getElementById('copyMinimalBtn');
-    const copyMinimalLabel = document.getElementById('copyMinimalLabel');
-    copyMinimalBtn.addEventListener('click', async () => {
-      try {
-        const res = await fetch('./examples/01-webgl-glyph-field/minimal.html');
-        const code = await res.text();
-        await navigator.clipboard.writeText(code);
-        copyMinimalLabel.textContent = '已复制 ✓';
-        setTimeout(() => {
-          copyMinimalLabel.textContent = '复制源码';
-        }, 1800);
-      } catch (err) {
-        window.open('./examples/01-webgl-glyph-field/minimal.html', '_blank');
-      }
     });
   </script>
 </body>
